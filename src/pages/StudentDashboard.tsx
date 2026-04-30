@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { 
-  Home, 
-  PenTool, 
-  BookMarked, 
-  PieChart, 
-  BrainCircuit, 
-  Calculator, 
-  ClipboardCheck, 
+import React, { useState, useEffect } from 'react';
+import { getUserInfo } from '../utils/storage';
+import { getSystemConfig, SystemConfig, MenuItem } from '../services/config';
+
+import {
+  Home,
+  PenTool,
+  BookMarked,
+  PieChart,
+  BrainCircuit,
+  Calculator,
+  ClipboardCheck,
   History as HistoryIcon,
   Search,
   Bell,
@@ -17,7 +20,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Settings
+  Settings,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -27,20 +30,59 @@ import ErrorBook from '../components/ErrorBook';
 import GrowthReport from '../components/GrowthReport';
 import StudentReviewMode from '../components/StudentReviewMode';
 
+// 图标映射表
+const iconMap: Record<string, React.ElementType> = {
+  Home,
+  PenTool,
+  BookMarked,
+  PieChart,
+  Settings,
+};
+
 const StudentDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [mode, setMode] = useState<'normal' | 'review'>('normal');
+  const [user, setUser] = useState<{ name: string; email: string } | null>(
+    null
+  );
+  const [config, setConfig] = useState<SystemConfig | null>(null);
+  const [menuItems, setMenuItems] = useState<
+    Array<{ id: string; label: string; icon: React.ElementType }>
+  >([]);
 
-  const menuItems = [
-    { id: 'home', label: '我的首页', icon: Home },
-    { id: 'homework', label: '待完成物理作业', icon: PenTool },
-    { id: 'errors', label: '物理错题本复盘', icon: BookMarked },
-    { id: 'report', label: '个人学习成长报告', icon: PieChart },
-    { id: 'profile', label: '个人中心 & 设置', icon: Settings },
-  ];
+  useEffect(() => {
+    const userInfo = getUserInfo<{ name: string; email: string }>();
+    if (userInfo) {
+      setUser(userInfo);
+    }
+  }, []);
+
+  // 获取系统配置
+  useEffect(() => {
+    const loadConfig = async () => {
+      const systemConfig = await getSystemConfig();
+      setConfig(systemConfig);
+
+      // 转换菜单数据
+      if (systemConfig?.student?.menu) {
+        const menus = systemConfig.student.menu.map((item: MenuItem) => ({
+          id: item.id,
+          label: item.label,
+          icon: iconMap[item.icon || 'Home'] || Home,
+        }));
+        setMenuItems(menus);
+      }
+    };
+    loadConfig();
+  }, []);
 
   const todoItems = [
-    { id: 1, title: '《电磁感应》课后作业', deadline: '今天 23:59', type: 'assignment' },
+    {
+      id: 1,
+      title: '《电磁感应》课后作业',
+      deadline: '今天 23:59',
+      type: 'assignment',
+    },
     { id: 2, title: '期中考试错题重做', deadline: '明天 12:00', type: 'error' },
     { id: 3, title: '查看物理实验报告', deadline: '已完成', type: 'report' },
   ];
@@ -51,11 +93,15 @@ const StudentDashboard: React.FC = () => {
       <aside className="w-64 bg-white border-r border-emerald-100 flex flex-col z-30">
         <div className="p-6 mb-4 flex items-center gap-3">
           <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 animate-float shadow-sm border border-emerald-100">
-            <span className="text-xl">🦖</span>
+            <span className="text-xl">{config?.system?.logo || '🦖'}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-black text-slate-800 tracking-tighter">阅小师</span>
-            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Student Pro</span>
+            <span className="text-xl font-black text-slate-800 tracking-tighter">
+              {config?.system?.name || '阅小师'}
+            </span>
+            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">
+              {config?.student?.title || 'Student Pro'}
+            </span>
           </div>
         </div>
 
@@ -65,16 +111,19 @@ const StudentDashboard: React.FC = () => {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={clsx(
-                "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group",
-                activeTab === item.id 
-                  ? "bg-emerald-600 text-white shadow-xl shadow-emerald-200 scale-[1.02]" 
-                  : "text-slate-400 hover:bg-emerald-50 hover:text-emerald-700"
+                'w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group',
+                activeTab === item.id
+                  ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200 scale-[1.02]'
+                  : 'text-slate-400 hover:bg-emerald-50 hover:text-emerald-700'
               )}
             >
-              <item.icon size={20} className={clsx(
-                "transition-transform duration-300",
-                activeTab === item.id ? "scale-110" : "group-hover:scale-110"
-              )} />
+              <item.icon
+                size={20}
+                className={clsx(
+                  'transition-transform duration-300',
+                  activeTab === item.id ? 'scale-110' : 'group-hover:scale-110'
+                )}
+              />
               <span className="font-bold text-sm">{item.label}</span>
             </button>
           ))}
@@ -85,12 +134,16 @@ const StudentDashboard: React.FC = () => {
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-3">
                 <Zap size={18} className="text-emerald-200" />
-                <span className="text-xs font-black uppercase tracking-wider">学习进度</span>
+                <span className="text-xs font-black uppercase tracking-wider">
+                  学习进度
+                </span>
               </div>
               <div className="w-full bg-white/20 rounded-full h-2 mb-3">
                 <div className="bg-white h-2 rounded-full w-[65%] transition-all duration-1000"></div>
               </div>
-              <p className="text-[10px] font-bold text-emerald-100">本周已完成 12 个任务</p>
+              <p className="text-[10px] font-bold text-emerald-100">
+                本周已完成 12 个任务
+              </p>
             </div>
             {/* Mascot background decoration */}
             <div className="absolute -bottom-4 -right-4 text-4xl opacity-10 grayscale group-hover:grayscale-0 group-hover:opacity-20 transition-all duration-500 transform group-hover:-rotate-12">
@@ -105,7 +158,7 @@ const StudentDashboard: React.FC = () => {
         {/* Top Header */}
         <header className="h-20 bg-white border-b border-emerald-50 flex items-center justify-between px-8 shrink-0 z-20 shadow-sm shadow-emerald-500/5">
           <div className="flex items-center gap-10">
-            <button 
+            <button
               onClick={() => setActiveTab('profile')}
               className="flex items-center gap-4 group cursor-pointer text-left"
             >
@@ -113,28 +166,36 @@ const StudentDashboard: React.FC = () => {
                 <User size={24} />
               </div>
               <div>
-                <p className="text-sm font-black text-slate-700 group-hover:text-emerald-600 transition-colors">张同学</p>
-                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.1em] mt-1">2024级 应用物理学</p>
+                <p className="text-sm font-black text-slate-700 group-hover:text-emerald-600 transition-colors">
+                  {user?.name || '未登录'}
+                </p>
+                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.1em] mt-1">
+                  {user?.email || ''}
+                </p>
               </div>
             </button>
 
             <div className="h-8 w-px bg-slate-100"></div>
 
             <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
-              <button 
+              <button
                 onClick={() => setMode('normal')}
                 className={clsx(
-                  "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                  mode === 'normal' ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/10" : "text-slate-400 hover:text-emerald-600"
+                  'px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all',
+                  mode === 'normal'
+                    ? 'bg-white text-emerald-700 shadow-lg shadow-emerald-500/10'
+                    : 'text-slate-400 hover:text-emerald-600'
                 )}
               >
                 普通模式
               </button>
-              <button 
+              <button
                 onClick={() => setMode('review')}
                 className={clsx(
-                  "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                  mode === 'review' ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/10" : "text-slate-400 hover:text-emerald-600"
+                  'px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all',
+                  mode === 'review'
+                    ? 'bg-white text-emerald-700 shadow-lg shadow-emerald-500/10'
+                    : 'text-slate-400 hover:text-emerald-600'
                 )}
               >
                 复习模式
@@ -144,7 +205,10 @@ const StudentDashboard: React.FC = () => {
 
           <div className="flex items-center gap-6">
             <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" size={18} />
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors"
+                size={18}
+              />
               <input
                 type="text"
                 placeholder="搜索课程、作业、公式..."
@@ -154,12 +218,18 @@ const StudentDashboard: React.FC = () => {
 
             <div className="flex items-center gap-3">
               <button className="flex items-center gap-2 px-5 py-3 bg-emerald-50 text-emerald-700 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 shadow-sm group">
-                <Calculator size={18} className="group-hover:rotate-12 transition-transform" />
+                <Calculator
+                  size={18}
+                  className="group-hover:rotate-12 transition-transform"
+                />
                 公式库
               </button>
-              
+
               <button className="p-3 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all relative group">
-                <Bell size={20} className="group-hover:scale-110 transition-transform" />
+                <Bell
+                  size={20}
+                  className="group-hover:scale-110 transition-transform"
+                />
                 <span className="absolute top-3 right-3 w-2 h-2 bg-orange-500 rounded-full border-2 border-white animate-pulse"></span>
               </button>
             </div>
@@ -173,93 +243,125 @@ const StudentDashboard: React.FC = () => {
               <>
                 {activeTab === 'home' && (
                   <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
-                {/* AI Features */}
-                <section>
-                  <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <BrainCircuit className="text-emerald-600" size={20} />
-                    AI 智能学习工具
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div 
-                      onClick={() => setActiveTab('homework')}
-                      className="p-6 bg-white rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all">
-                          <PenTool size={24} />
-                        </div>
-                        <ChevronRight size={20} className="text-slate-300 group-hover:text-blue-600 transition-all" />
-                      </div>
-                      <h3 className="font-bold text-slate-800 mb-1">AI 题目分步解析</h3>
-                      <p className="text-xs text-slate-400">公式推理、解题思路、易错点精准点评</p>
-                    </div>
-                    <div 
-                      onClick={() => setActiveTab('errors')}
-                      className="p-6 bg-white rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-purple-50 text-purple-600 rounded-xl group-hover:bg-purple-600 group-hover:text-white transition-all">
-                          <HistoryIcon size={24} />
-                        </div>
-                        <ChevronRight size={20} className="text-slate-300 group-hover:text-purple-600 transition-all" />
-                      </div>
-                      <h3 className="font-bold text-slate-800 mb-1">AI 公式补全与纠错</h3>
-                      <p className="text-xs text-slate-400">大学物理公式智能索引与书写规范校验</p>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Recent Activity */}
-                <section>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-slate-800">最近完成的作业</h2>
-                    <button 
-                      onClick={() => setActiveTab('homework')}
-                      className="text-sm text-emerald-600 font-medium hover:underline"
-                    >
-                      查看全部
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    {[1, 2].map((i) => (
-                      <div key={i} className="p-5 bg-white rounded-2xl border border-slate-100 flex items-center gap-4 hover:border-emerald-200 transition-all shadow-sm">
-                        <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-emerald-600 font-bold">
-                          {95 - i * 3}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-bold text-slate-700 text-sm">大学物理（下）- 第三章习题</h4>
-                          <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-                            <Clock size={12} /> 提交于 2024-04-20 15:30
+                    {/* AI Features */}
+                    <section>
+                      <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <BrainCircuit className="text-emerald-600" size={20} />
+                        AI 智能学习工具
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div
+                          onClick={() => setActiveTab('homework')}
+                          className="p-6 bg-white rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                              <PenTool size={24} />
+                            </div>
+                            <ChevronRight
+                              size={20}
+                              className="text-slate-300 group-hover:text-blue-600 transition-all"
+                            />
+                          </div>
+                          <h3 className="font-bold text-slate-800 mb-1">
+                            AI 题目分步解析
+                          </h3>
+                          <p className="text-xs text-slate-400">
+                            公式推理、解题思路、易错点精准点评
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold">已批改</span>
-                          <ChevronRight size={18} className="text-slate-300" />
+                        <div
+                          onClick={() => setActiveTab('errors')}
+                          className="p-6 bg-white rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl group-hover:bg-purple-600 group-hover:text-white transition-all">
+                              <HistoryIcon size={24} />
+                            </div>
+                            <ChevronRight
+                              size={20}
+                              className="text-slate-300 group-hover:text-purple-600 transition-all"
+                            />
+                          </div>
+                          <h3 className="font-bold text-slate-800 mb-1">
+                            AI 公式补全与纠错
+                          </h3>
+                          <p className="text-xs text-slate-400">
+                            大学物理公式智能索引与书写规范校验
+                          </p>
                         </div>
                       </div>
-                    ))}
+                    </section>
+
+                    {/* Recent Activity */}
+                    <section>
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-slate-800">
+                          最近完成的作业
+                        </h2>
+                        <button
+                          onClick={() => setActiveTab('homework')}
+                          className="text-sm text-emerald-600 font-medium hover:underline"
+                        >
+                          查看全部
+                        </button>
+                      </div>
+                      <div className="space-y-4">
+                        {[1, 2].map((i) => (
+                          <div
+                            key={i}
+                            className="p-5 bg-white rounded-2xl border border-slate-100 flex items-center gap-4 hover:border-emerald-200 transition-all shadow-sm"
+                          >
+                            <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-emerald-600 font-bold">
+                              {95 - i * 3}
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-bold text-slate-700 text-sm">
+                                大学物理（下）- 第三章习题
+                              </h4>
+                              <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                                <Clock size={12} /> 提交于 2024-04-20 15:30
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold">
+                                已批改
+                              </span>
+                              <ChevronRight
+                                size={18}
+                                className="text-slate-300"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
                   </div>
-                </section>
-              </div>
-            )}
+                )}
 
-            {activeTab === 'homework' && <StudentHomework />}
-            {activeTab === 'errors' && <ErrorBook />}
-            {activeTab === 'report' && <GrowthReport />}
-            {activeTab === 'profile' && <StudentProfile />}
+                {activeTab === 'homework' && <StudentHomework />}
+                {activeTab === 'errors' && <ErrorBook />}
+                {activeTab === 'report' && <GrowthReport />}
+                {activeTab === 'profile' && <StudentProfile />}
 
-            {activeTab !== 'home' && !['homework', 'errors', 'report', 'profile'].includes(activeTab) && (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4 animate-in fade-in duration-300">
-                <div className="w-16 h-16 bg-emerald-50 rounded-3xl flex items-center justify-center text-emerald-600">
-                  <Settings size={32} className="animate-spin-slow" />
-                </div>
-                <p className="font-medium">{menuItems.find(i => i.id === activeTab)?.label} 模块正在开发中...</p>
-              </div>
+                {activeTab !== 'home' &&
+                  !['homework', 'errors', 'report', 'profile'].includes(
+                    activeTab
+                  ) && (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4 animate-in fade-in duration-300">
+                      <div className="w-16 h-16 bg-emerald-50 rounded-3xl flex items-center justify-center text-emerald-600">
+                        <Settings size={32} className="animate-spin-slow" />
+                      </div>
+                      <p className="font-medium">
+                        {menuItems.find((i) => i.id === activeTab)?.label}{' '}
+                        模块正在开发中...
+                      </p>
+                    </div>
+                  )}
+              </>
+            ) : (
+              <StudentReviewMode />
             )}
-            </>
-          ) : (
-            <StudentReviewMode />
-          )}
           </main>
 
           {/* Right Sidebar - Todos */}
@@ -270,17 +372,28 @@ const StudentDashboard: React.FC = () => {
             </h3>
             <div className="space-y-4">
               {todoItems.map((todo) => (
-                <div key={todo.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-lg hover:shadow-emerald-500/5 transition-all cursor-pointer group">
+                <div
+                  key={todo.id}
+                  className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-lg hover:shadow-emerald-500/5 transition-all cursor-pointer group"
+                >
                   <div className="flex items-start justify-between mb-3">
-                    <div className={clsx(
-                      "p-2 rounded-lg",
-                      todo.type === 'assignment' ? "bg-blue-100 text-blue-600" :
-                      todo.type === 'error' ? "bg-orange-100 text-orange-600" :
-                      "bg-emerald-100 text-emerald-600"
-                    )}>
-                      {todo.type === 'assignment' ? <PenTool size={16} /> :
-                       todo.type === 'error' ? <BookMarked size={16} /> :
-                       <PieChart size={16} />}
+                    <div
+                      className={clsx(
+                        'p-2 rounded-lg',
+                        todo.type === 'assignment'
+                          ? 'bg-blue-100 text-blue-600'
+                          : todo.type === 'error'
+                            ? 'bg-orange-100 text-orange-600'
+                            : 'bg-emerald-100 text-emerald-600'
+                      )}
+                    >
+                      {todo.type === 'assignment' ? (
+                        <PenTool size={16} />
+                      ) : todo.type === 'error' ? (
+                        <BookMarked size={16} />
+                      ) : (
+                        <PieChart size={16} />
+                      )}
                     </div>
                     {todo.deadline === '已完成' ? (
                       <CheckCircle2 size={16} className="text-emerald-500" />
@@ -288,8 +401,12 @@ const StudentDashboard: React.FC = () => {
                       <AlertCircle size={16} className="text-orange-500" />
                     )}
                   </div>
-                  <h4 className="font-bold text-slate-700 text-sm mb-1 group-hover:text-emerald-600 transition-colors">{todo.title}</h4>
-                  <p className="text-xs text-slate-400">截止日期: {todo.deadline}</p>
+                  <h4 className="font-bold text-slate-700 text-sm mb-1 group-hover:text-emerald-600 transition-colors">
+                    {todo.title}
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    截止日期: {todo.deadline}
+                  </p>
                 </div>
               ))}
             </div>

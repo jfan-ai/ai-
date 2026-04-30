@@ -19,7 +19,10 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const existingUser = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    const existingUser = await db.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
     if (existingUser.rows.length > 0) {
       return res.status(409).json({ error: '该邮箱已被注册' });
     }
@@ -27,22 +30,24 @@ router.post('/register', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const userId = uuidv4();
 
-    const result = await db.query(
-      `INSERT INTO users (id, email, password_hash, role, name) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, role, name, avatar, created_at`,
+    // 插入用户
+    await db.query(
+      `INSERT INTO users (id, email, password_hash, role, name) VALUES ($1, $2, $3, $4, $5)`,
       [userId, email, passwordHash, role, name]
     );
 
+    // 插入角色扩展表
     if (role === 'teacher') {
-      await db.query(
-        `INSERT INTO teachers (user_id) VALUES ($1)`,
-        [userId]
-      );
+      await db.query(`INSERT INTO teachers (user_id) VALUES ($1)`, [userId]);
     } else {
-      await db.query(
-        `INSERT INTO students (user_id) VALUES ($1)`,
-        [userId]
-      );
+      await db.query(`INSERT INTO students (user_id) VALUES ($1)`, [userId]);
     }
+
+    // 查询刚创建的用户
+    const newUser = await db.query(
+      'SELECT id, email, role, name, avatar, created_at FROM users WHERE id = $1',
+      [userId]
+    );
 
     const token = jwt.sign(
       { id: userId, email, role, name },
@@ -53,7 +58,7 @@ router.post('/register', async (req, res) => {
     res.status(201).json({
       message: '注册成功',
       token,
-      user: result.rows[0]
+      user: newUser.rows[0],
     });
   } catch (err) {
     console.error('注册错误:', err);
@@ -69,10 +74,9 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const result = await db.query(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
+    const result = await db.query('SELECT * FROM users WHERE email = $1', [
+      email,
+    ]);
 
     if (result.rows.length === 0) {
       return res.status(401).json({ error: '邮箱或密码错误' });
@@ -99,8 +103,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         role: user.role,
         name: user.name,
-        avatar: user.avatar
-      }
+        avatar: user.avatar,
+      },
     });
   } catch (err) {
     console.error('登录错误:', err);

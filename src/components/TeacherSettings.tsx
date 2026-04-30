@@ -1,8 +1,19 @@
 import React from 'react';
-import { Bell, Shield, Key } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useNavigate } from 'react-router-dom';
 
 const TeacherSettings: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // 清除登录信息
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // 跳转到登录页面
+    navigate('/login');
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
@@ -34,32 +45,15 @@ const TeacherSettings: React.FC = () => {
             ))}
           </div>
 
-          {/* Security Settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-3">
-              <Shield size={20} className="text-brand" />
-              安全设置
-            </h3>
-            {[
-              { title: '两步验证', desc: '未开启', icon: Key, danger: true },
-              { title: '登录设备管理', desc: '当前有 2 台设备登录', icon: Shield },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-brand-light/50 transition-all cursor-pointer">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm group-hover:text-brand transition-all">
-                    <item.icon size={20} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-black text-slate-700">{item.title}</p>
-                    <p className={clsx(
-                      "text-[10px] font-bold mt-0.5",
-                      item.danger ? "text-red-500" : "text-slate-400"
-                    )}>{item.desc}</p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest group-hover:text-brand transition-all">修改 →</span>
-              </div>
-            ))}
+          {/* Logout Button */}
+          <div className="pt-6 border-t border-slate-100">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-3 p-5 bg-red-50 rounded-2xl border border-red-100 text-red-600 hover:bg-red-100 transition-all group"
+            >
+              <LogOut size={20} className="group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-black">退出登录</span>
+            </button>
           </div>
         </div>
       </div>

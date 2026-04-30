@@ -5,7 +5,7 @@ class AIService {
   constructor() {
     this.client = new OpenAI({
       apiKey: process.env.AI_API_KEY,
-      baseURL: process.env.AI_API_URL
+      baseURL: process.env.AI_API_URL,
     });
   }
 
@@ -35,19 +35,19 @@ class AIService {
 }`;
 
       const response = await this.client.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: process.env.AI_MODEL || 'gpt-3.5-turbo',
         messages: [
           {
             role: 'system',
-            content: '你是一位专业的大学物理教师，擅长出题和批改作业。'
+            content: '你是一位专业的大学物理教师，擅长出题和批改作业。',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         temperature: 0.7,
-        max_tokens: 4000
+        max_tokens: 4000,
       });
 
       const content = response.choices[0].message.content;
@@ -88,19 +88,19 @@ class AIService {
 }`;
 
       const response = await this.client.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: process.env.AI_MODEL || 'gpt-3.5-turbo',
         messages: [
           {
             role: 'system',
-            content: '你是一位严格的大学物理教师，擅长客观公正地批改作业。'
+            content: '你是一位严格的大学物理教师，擅长客观公正地批改作业。',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         temperature: 0.3,
-        max_tokens: 2000
+        max_tokens: 2000,
       });
 
       const content = response.choices[0].message.content;
@@ -115,7 +115,7 @@ class AIService {
         isCorrect: false,
         errorPoints: ['无法解析AI响应'],
         feedback: '批改失败',
-        suggestions: ['请重新提交']
+        suggestions: ['请重新提交'],
       };
     } catch (error) {
       console.error('AI批改作业错误:', error);
@@ -142,19 +142,20 @@ ${JSON.stringify(classSubmissions, null, 2)}
 }`;
 
       const response = await this.client.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: process.env.AI_MODEL || 'gpt-3.5-turbo',
         messages: [
           {
             role: 'system',
-            content: '你是一位经验丰富的物理教学专家，擅长分析学情数据并给出教学建议。'
+            content:
+              '你是一位经验丰富的物理教学专家，擅长分析学情数据并给出教学建议。',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         temperature: 0.5,
-        max_tokens: 3000
+        max_tokens: 3000,
       });
 
       const content = response.choices[0].message.content;
@@ -167,7 +168,7 @@ ${JSON.stringify(classSubmissions, null, 2)}
       return {
         strengths: [],
         weaknesses: [],
-        suggestions: ['数据不足，无法分析']
+        suggestions: ['数据不足，无法分析'],
       };
     } catch (error) {
       console.error('AI学情分析错误:', error);
@@ -199,19 +200,20 @@ ${JSON.stringify(classSubmissions, null, 2)}
 }`;
 
       const response = await this.client.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: process.env.AI_MODEL || 'gpt-3.5-turbo',
         messages: [
           {
             role: 'system',
-            content: '你是一位耐心的物理家教，擅长根据学生情况推荐合适的练习题。'
+            content:
+              '你是一位耐心的物理家教，擅长根据学生情况推荐合适的练习题。',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         temperature: 0.7,
-        max_tokens: 3000
+        max_tokens: 3000,
       });
 
       const content = response.choices[0].message.content;
@@ -249,19 +251,20 @@ ${JSON.stringify(studentStats, null, 2)}
 }`;
 
       const response = await this.client.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: process.env.AI_MODEL || 'gpt-3.5-turbo',
         messages: [
           {
             role: 'system',
-            content: '你是一位鼓励学生成长的学习导师，擅长发掘学生的闪光点并给出积极建议。'
+            content:
+              '你是一位鼓励学生成长的学习导师，擅长发掘学生的闪光点并给出积极建议。',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         temperature: 0.7,
-        max_tokens: 3000
+        max_tokens: 3000,
       });
 
       const content = response.choices[0].message.content;
@@ -275,7 +278,7 @@ ${JSON.stringify(studentStats, null, 2)}
         highlights: [],
         improvements: [],
         suggestions: ['数据不足'],
-        newAchievements: []
+        newAchievements: [],
       };
     } catch (error) {
       console.error('AI成长洞察错误:', error);
