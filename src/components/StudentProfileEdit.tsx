@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Lock, Save, X } from 'lucide-react';
+import { User, Mail, Phone, Lock, Save, X, BookOpen, GraduationCap } from 'lucide-react';
 import { getUserInfo, setUserInfo } from '../utils/storage';
 import { api } from '../services/api';
 
-const TeacherProfileEdit: React.FC<{
+const StudentProfileEdit: React.FC<{
   onSave: () => void;
   onCancel: () => void;
 }> = ({ onSave, onCancel }) => {
@@ -11,11 +11,17 @@ const TeacherProfileEdit: React.FC<{
     name: string;
     email: string;
     phone?: string;
+    studentId?: string;
+    major?: string;
+    grade?: string;
   } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
+    studentId: '',
+    major: '',
+    grade: '',
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +32,9 @@ const TeacherProfileEdit: React.FC<{
       name: string;
       email: string;
       phone?: string;
+      studentId?: string;
+      major?: string;
+      grade?: string;
     }>();
     if (userInfo) {
       setUser(userInfo);
@@ -33,6 +42,9 @@ const TeacherProfileEdit: React.FC<{
         name: userInfo.name || '',
         email: userInfo.email || '',
         phone: userInfo.phone || '',
+        studentId: userInfo.studentId || '',
+        major: userInfo.major || '',
+        grade: userInfo.grade || '',
         password: '',
       });
     }
@@ -52,6 +64,7 @@ const TeacherProfileEdit: React.FC<{
       await api.put<{ message: string; user: { id: string; email: string; name: string; avatar: string; phone: string; role: string } }>('/profile', {
         name: formData.name,
         phone: formData.phone || null,
+        class_name: formData.grade,
         // email 通常不允许修改，或者需要单独验证
       });
 
@@ -63,16 +76,16 @@ const TeacherProfileEdit: React.FC<{
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
+          studentId: formData.studentId,
+          major: formData.major,
+          grade: formData.grade,
         };
         setUserInfo(updatedUser);
       }
       
       onSave();
     } catch (err: any) {
-      console.error('更新失败:', err);
-      // 显示详细的错误信息
-      const errorMessage = err.message || err.error || JSON.stringify(err) || '保存失败，请重试';
-      setError(errorMessage);
+      setError(err.message || '保存失败，请重试');
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +93,7 @@ const TeacherProfileEdit: React.FC<{
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
-      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+      <div className="bg-white rounded-[2.5rem] p-8 border border-emerald-100 shadow-sm">
         <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-8">
           编辑个人资料
         </h2>
@@ -106,7 +119,7 @@ const TeacherProfileEdit: React.FC<{
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="请输入姓名"
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-brand/20 outline-none"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-emerald/20 outline-none"
                 />
               </div>
             </div>
@@ -125,7 +138,26 @@ const TeacherProfileEdit: React.FC<{
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="请输入邮箱"
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-brand/20 outline-none"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-emerald/20 outline-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                学号
+              </label>
+              <div className="relative">
+                <GraduationCap
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  name="studentId"
+                  value={formData.studentId}
+                  onChange={handleChange}
+                  placeholder="请输入学号"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-emerald/20 outline-none"
                 />
               </div>
             </div>
@@ -144,7 +176,45 @@ const TeacherProfileEdit: React.FC<{
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="请输入手机号码"
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-brand/20 outline-none"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-emerald/20 outline-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                专业
+              </label>
+              <div className="relative">
+                <BookOpen
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  name="major"
+                  value={formData.major}
+                  onChange={handleChange}
+                  placeholder="请输入专业"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-emerald/20 outline-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                年级
+              </label>
+              <div className="relative">
+                <GraduationCap
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  name="grade"
+                  value={formData.grade}
+                  onChange={handleChange}
+                  placeholder="请输入年级"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-emerald/20 outline-none"
                 />
               </div>
             </div>
@@ -163,7 +233,7 @@ const TeacherProfileEdit: React.FC<{
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="留空则不修改"
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-brand/20 outline-none"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent rounded-xl focus:ring-2 focus:ring-emerald/20 outline-none"
                 />
               </div>
             </div>
@@ -180,7 +250,7 @@ const TeacherProfileEdit: React.FC<{
               type="button"
               onClick={handleSave}
               disabled={isLoading}
-              className="flex items-center gap-2 px-6 py-2.5 bg-brand text-white rounded-xl font-bold text-sm shadow-lg shadow-brand/20 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald/20 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isLoading ? (
                 <>
@@ -200,4 +270,4 @@ const TeacherProfileEdit: React.FC<{
   );
 };
 
-export default TeacherProfileEdit;
+export default StudentProfileEdit;

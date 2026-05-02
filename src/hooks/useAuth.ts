@@ -93,8 +93,8 @@ export const useAuth = (): UseAuthReturn => {
   const refreshUser = useCallback(async () => {
     try {
       const response = await getCurrentUser();
-      setUser(response.profile);
-      setUserInfo(response.profile);
+      setUser(response.user);
+      setUserInfo(response.user);
     } catch (err) {
       console.error('Refresh user error:', err);
     }

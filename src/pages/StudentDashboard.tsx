@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getUserInfo } from '../utils/storage';
 import { getSystemConfig, SystemConfig, MenuItem } from '../services/config';
+import { getStudentAssignments } from '../services/assignments';
 
 import {
   Home,
@@ -21,6 +22,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Settings,
+  Loader2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -39,6 +41,23 @@ const iconMap: Record<string, React.ElementType> = {
   Settings,
 };
 
+// 待办事项类型
+interface TodoItem {
+  id: string;
+  title: string;
+  deadline: string;
+  type: 'assignment' | 'error' | 'report';
+}
+
+// 最近作业类型
+interface RecentAssignment {
+  id: string;
+  title: string;
+  score: number;
+  submitTime: string;
+  status: string;
+}
+
 const StudentDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [mode, setMode] = useState<'normal' | 'review'>('normal');
@@ -49,6 +68,13 @@ const StudentDashboard: React.FC = () => {
   const [menuItems, setMenuItems] = useState<
     Array<{ id: string; label: string; icon: React.ElementType }>
   >([]);
+  
+  // 待办事项数据（从API获取）
+  const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
+  // 最近作业数据（从API获取）
+  const [recentAssignments, setRecentAssignments] = useState<RecentAssignment[]>([]);
+  // 加载状态
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const userInfo = getUserInfo<{ name: string; email: string }>();
@@ -76,16 +102,52 @@ const StudentDashboard: React.FC = () => {
     loadConfig();
   }, []);
 
-  const todoItems = [
-    {
-      id: 1,
-      title: '《电磁感应》课后作业',
-      deadline: '今天 23:59',
-      type: 'assignment',
-    },
-    { id: 2, title: '期中考试错题重做', deadline: '明天 12:00', type: 'error' },
-    { id: 3, title: '查看物理实验报告', deadline: '已完成', type: 'report' },
-  ];
+  /**
+   * 获取学生作业数据
+   * 包括待办事项和最近完成的作业
+   */
+  useEffect(() => {
+    const loadAssignments = async () => {
+      try {
+        setLoading(true);
+        const response = await getStudentAssignments();
+        const assignments = response.assignments || [];
+
+        // 转换为待办事项（未完成的作业）
+        const todos: TodoItem[] = assignments
+          .filter((a: any) => a.status === 'pending' || a.status === 'in_progress')
+          .map((a: any) => ({
+            id: a.id,
+            title: a.title,
+            deadline: a.deadline || '未设置',
+            type: 'assignment' as const,
+          }));
+        setTodoItems(todos);
+
+        // 转换为最近完成的作业
+        const recent: RecentAssignment[] = assignments
+          .filter((a: any) => a.status === 'completed' || a.status === 'graded')
+          .slice(0, 5)
+          .map((a: any) => ({
+            id: a.id,
+            title: a.title,
+            score: a.score || 0,
+            submitTime: a.submittedAt || a.createdAt,
+            status: a.status,
+          }));
+        setRecentAssignments(recent);
+      } catch (error) {
+        console.error('加载作业数据失败:', error);
+        // API失败时显示空状态，不显示假数据
+        setTodoItems([]);
+        setRecentAssignments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAssignments();
+  }, []);
 
   return (
     <div className="flex h-screen bg-emerald-50/30 text-slate-900 overflow-hidden">
@@ -293,7 +355,7 @@ const StudentDashboard: React.FC = () => {
                       </div>
                     </section>
 
-                    {/* Recent Activity */}
+                    {/* Recent Activity - 最近完成的作业 */}
                     <section>
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-slate-800">
@@ -306,35 +368,56 @@ const StudentDashboard: React.FC = () => {
                           查看全部
                         </button>
                       </div>
-                      <div className="space-y-4">
-                        {[1, 2].map((i) => (
-                          <div
-                            key={i}
-                            className="p-5 bg-white rounded-2xl border border-slate-100 flex items-center gap-4 hover:border-emerald-200 transition-all shadow-sm"
-                          >
-                            <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-emerald-600 font-bold">
-                              {95 - i * 3}
+                      
+                      {loading ? (
+                        // 加载状态
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 size={24} className="text-emerald-600 animate-spin" />
+                        </div>
+                      ) : recentAssignments.length > 0 ? (
+                        // 显示最近作业列表
+                        <div className="space-y-4">
+                          {recentAssignments.map((assignment) => (
+                            <div
+                              key={assignment.id}
+                              className="p-5 bg-white rounded-2xl border border-slate-100 flex items-center gap-4 hover:border-emerald-200 transition-all shadow-sm cursor-pointer"
+                              onClick={() => setActiveTab('homework')}
+                            >
+                              <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-emerald-600 font-bold">
+                                {assignment.score}
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-bold text-slate-700 text-sm">
+                                  {assignment.title}
+                                </h4>
+                                <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                                  <Clock size={12} /> 提交于 {new Date(assignment.submitTime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={clsx(
+                                  'px-3 py-1 rounded-full text-xs font-bold',
+                                  assignment.status === 'graded'
+                                    ? 'bg-emerald-50 text-emerald-600'
+                                    : 'bg-blue-50 text-blue-600'
+                                )}>
+                                  {assignment.status === 'graded' ? '已批改' : '已完成'}
+                                </span>
+                                <ChevronRight
+                                  size={18}
+                                  className="text-slate-300"
+                                />
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <h4 className="font-bold text-slate-700 text-sm">
-                                大学物理（下）- 第三章习题
-                              </h4>
-                              <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-                                <Clock size={12} /> 提交于 2024-04-20 15:30
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold">
-                                已批改
-                              </span>
-                              <ChevronRight
-                                size={18}
-                                className="text-slate-300"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        // 空状态
+                        <div className="text-center py-8 text-slate-400">
+                          <p>暂无最近完成的作业</p>
+                          <p className="text-xs mt-1">快去完成作业吧！</p>
+                        </div>
+                      )}
                     </section>
                   </div>
                 )}

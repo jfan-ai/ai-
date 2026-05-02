@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getUserInfo } from '../utils/storage';
 import { getSystemConfig, SystemConfig } from '../services/config';
+import { getStudentAnalytics } from '../services/analytics';
+import StudentProfileEdit from './StudentProfileEdit';
 
 import {
   Mail,
@@ -11,22 +13,47 @@ import {
   TrendingUp,
   BookOpen,
   Lock,
+  Loader2,
 } from 'lucide-react';
 
+// 学习统计数据类型
+interface LearningStats {
+  completedAssignments: number;
+  accuracy: string;
+  studyDays: number;
+  rank: string;
+}
+
 const StudentProfile: React.FC = () => {
+  const [isEditing, setIsEditing] = useState(false);
   const [user, setUser] = useState<{
     name: string;
     email: string;
+    phone?: string;
     studentId?: string;
     major?: string;
     grade?: string;
   } | null>(null);
   const [config, setConfig] = useState<SystemConfig | null>(null);
+  // 学习统计数据
+  const [stats, setStats] = useState<LearningStats>({
+    completedAssignments: 32,
+    accuracy: '88%',
+    studyDays: 45,
+    rank: '#12',
+  });
+  // 加载状态
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // 当前学生ID
+  const studentId = 'current-student-id';
+
+  // 获取用户信息的函数
+  const loadUserInfo = () => {
     const userInfo = getUserInfo<{
       name: string;
       email: string;
+      phone?: string;
       studentId?: string;
       major?: string;
       grade?: string;
@@ -34,7 +61,18 @@ const StudentProfile: React.FC = () => {
     if (userInfo) {
       setUser(userInfo);
     }
+  };
+
+  useEffect(() => {
+    loadUserInfo();
   }, []);
+
+  // 当退出编辑模式时，重新加载用户信息
+  useEffect(() => {
+    if (!isEditing) {
+      loadUserInfo();
+    }
+  }, [isEditing]);
 
   // 获取系统配置
   useEffect(() => {
@@ -44,6 +82,42 @@ const StudentProfile: React.FC = () => {
     };
     loadConfig();
   }, []);
+
+  /**
+   * 获取学生学习统计数据
+   */
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        setLoading(true);
+        const response = await getStudentAnalytics(studentId);
+        if (response.overview) {
+          setStats({
+            completedAssignments: response.overview.totalAssignments,
+            accuracy: `${response.overview.averageScore}%`,
+            studyDays: response.overview.studyHours,
+            rank: '#12', // 排名需要后端提供
+          });
+        }
+      } catch (error) {
+        console.error('加载学习统计数据失败:', error);
+        // 使用默认数据
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [studentId]);
+
+  if (isEditing) {
+    return (
+      <StudentProfileEdit
+        onSave={() => setIsEditing(false)}
+        onCancel={() => setIsEditing(false)}
+      />
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
@@ -76,7 +150,10 @@ const StudentProfile: React.FC = () => {
             </span>
           </div>
         </div>
-        <button className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-emerald-200 hover:scale-105 transition-all">
+        <button 
+          onClick={() => setIsEditing(true)}
+          className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-emerald-200 hover:scale-105 transition-all"
+        >
           编辑资料
         </button>
       </div>
@@ -84,18 +161,19 @@ const StudentProfile: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Academic Stats & Learning Footprint */}
         <div className="md:col-span-2 space-y-6">
-          {/* Academic Stats */}
+          {/* Academic Stats - 学习数据概览 */}
           <div className="bg-white rounded-[2.5rem] border border-emerald-50 shadow-sm p-8 space-y-6">
             <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-3">
               <TrendingUp size={20} className="text-emerald-600" />
               学习数据概览
+              {loading && <Loader2 size={16} className="animate-spin text-emerald-400" />}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: '完成作业', value: '32', icon: BookOpen },
-                { label: '正确率', value: '88%', icon: Award },
-                { label: '学习天数', value: '45', icon: Calendar },
-                { label: '积分排名', value: '#12', icon: TrendingUp },
+                { label: '完成作业', value: stats.completedAssignments, icon: BookOpen },
+                { label: '正确率', value: stats.accuracy, icon: Award },
+                { label: '学习天数', value: stats.studyDays, icon: Calendar },
+                { label: '积分排名', value: stats.rank, icon: TrendingUp },
               ].map((stat, i) => (
                 <div
                   key={i}

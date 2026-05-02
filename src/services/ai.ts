@@ -20,30 +20,30 @@ export interface AnalyzeClassRequest {
 export const aiService = {
   // 智能组卷 - 生成题目
   async generateQuestions(data: GenerateQuestionsRequest) {
-    const response = await api.post('/api/ai/generate-questions', {
+    const response = await api.post('/ai/generate-questions', {
       chapter: data.topic,
       count: data.count || 5,
       difficulty: data.difficulty || '中等',
       type: data.type || '综合',
     });
-    return response.data;
+    return response;
   },
 
   // 专业批改
   async correctHomework(data: CorrectHomeworkRequest) {
-    const response = await api.post('/api/ai/grade', {
+    const response = await api.post('/ai/grade', {
       studentAnswer: data.content,
       question: data.question,
       standardAnswer: data.standardAnswer,
     });
-    return response.data;
+    return response;
   },
 
   // 学情分析
   async analyzeClass(data: AnalyzeClassRequest) {
-    const response = await api.post('/api/ai/analyze', {
+    const response = await api.post('/ai/analyze', {
       classId: data.classId,
     });
-    return response.data;
+    return response;
   },
 };

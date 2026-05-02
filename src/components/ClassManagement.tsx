@@ -5,7 +5,6 @@ import {
   Trash2,
   Edit2,
   X,
-  ChevronRight,
   UserPlus,
   UserMinus,
 } from 'lucide-react';
@@ -223,9 +222,9 @@ const ClassManagement: React.FC = () => {
                       {cls.description || '暂无描述'}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 text-slate-400 text-sm">
+                    <div className="flex items-center gap-1 text-slate-400 text-sm">
                     <Users size={16} />
-                    <span>{cls.student_count || 0}</span>
+                    <span>{cls.studentCount || 0}</span>
                   </div>
                 </div>
               </div>

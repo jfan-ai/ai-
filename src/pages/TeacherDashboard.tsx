@@ -3,8 +3,8 @@ import { getUserInfo } from '../utils/storage';
 import {
   getSystemConfig,
   SystemConfig,
-  MenuItem,
   AIModuleConfig,
+  type MenuItem,
 } from '../services/config';
 import api from '../services/api';
 
@@ -82,7 +82,7 @@ const TeacherDashboard: React.FC = () => {
   const [dashboardStats, setDashboardStats] = useState<DashboardData | null>(
     null
   );
-  const [statsLoading, setStatsLoading] = useState(true);
+  const [, setStatsLoading] = useState(true);
 
   useEffect(() => {
     const userInfo = getUserInfo<{ name: string; email: string }>();

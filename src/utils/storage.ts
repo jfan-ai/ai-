@@ -52,10 +52,31 @@ export const clearStorage = (): void => {
   }
 };
 
-// Token 相关
-export const setToken = (token: string): void => setStorage('token', token);
-export const getToken = (): string | undefined => getStorage<string>('token');
-export const removeToken = (): void => removeStorage('token');
+// Token 相关 - 直接操作 localStorage，不进行 JSON 序列化
+export const setToken = (token: string): void => {
+  try {
+    localStorage.setItem(`${PREFIX}token`, token);
+  } catch (error) {
+    console.error('Token set error:', error);
+  }
+};
+
+export const getToken = (): string | undefined => {
+  try {
+    return localStorage.getItem(`${PREFIX}token`) || undefined;
+  } catch (error) {
+    console.error('Token get error:', error);
+    return undefined;
+  }
+};
+
+export const removeToken = (): void => {
+  try {
+    localStorage.removeItem(`${PREFIX}token`);
+  } catch (error) {
+    console.error('Token remove error:', error);
+  }
+};
 
 // 用户信息相关
 export const setUserInfo = <T>(user: T): void => setStorage('user', user);

@@ -18,13 +18,6 @@ import { getTeacherClasses, Class as ClassType } from '../services/classes';
 import api from '../services/api';
 
 // 分析数据接口
-interface ClassStats {
-  averageScore: number;
-  passRate: number;
-  maxScore: number;
-  weakPoints: number;
-}
-
 interface KnowledgePoint {
   name: string;
   mastery: number;
@@ -83,7 +76,6 @@ const LearningAnalysis: React.FC = () => {
   const [knowledgePoints, setKnowledgePoints] = useState<KnowledgePoint[]>([]);
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
   const [classActivity, setClassActivity] = useState<ClassActivity[]>([]);
-  const [dataLoading, setDataLoading] = useState(false);
 
   useEffect(() => {
     loadClasses();
@@ -111,7 +103,6 @@ const LearningAnalysis: React.FC = () => {
   };
 
   const loadAnalysisData = async (className: string) => {
-    setDataLoading(true);
     try {
       // 并行加载所有分析数据
       const [statsRes, knowledgeRes, insightsRes, activityRes] =
@@ -126,10 +117,10 @@ const LearningAnalysis: React.FC = () => {
           api.get('/analytics/class-activity'),
         ]);
 
-      const statsData = statsRes.data as any;
-      const knowledgeData = knowledgeRes.data as any;
-      const insightsData = insightsRes.data as any;
-      const activityData = activityRes.data as any;
+      const statsData = statsRes as any;
+      const knowledgeData = knowledgeRes as any;
+      const insightsData = insightsRes as any;
+      const activityData = activityRes as any;
 
       // 更新统计数据
       if (statsData?.stats) {
@@ -150,10 +141,10 @@ const LearningAnalysis: React.FC = () => {
           },
           {
             label: '最高分',
-            value: '100',
+            value: statsData.stats?.maxScore ? String(statsData.stats.maxScore) : '--',
             icon: TrendingUp,
             color: 'blue',
-            trend: '持平',
+            trend: statsData.stats?.maxScoreTrend || '持平',
           },
           {
             label: '薄弱环节',
@@ -195,8 +186,6 @@ const LearningAnalysis: React.FC = () => {
       setKnowledgePoints([]);
       setAiInsights([]);
       setClassActivity([]);
-    } finally {
-      setDataLoading(false);
     }
   };
 

@@ -27,7 +27,8 @@ const TeacherProfile: React.FC = () => {
   } | null>(null);
   const [config, setConfig] = useState<SystemConfig | null>(null);
 
-  useEffect(() => {
+  // 获取用户信息的函数
+  const loadUserInfo = () => {
     const userInfo = getUserInfo<{
       name: string;
       email: string;
@@ -38,7 +39,18 @@ const TeacherProfile: React.FC = () => {
     if (userInfo) {
       setUser(userInfo);
     }
+  };
+
+  useEffect(() => {
+    loadUserInfo();
   }, []);
+
+  // 当退出编辑模式时，重新加载用户信息
+  useEffect(() => {
+    if (!isEditing) {
+      loadUserInfo();
+    }
+  }, [isEditing]);
 
   // 获取系统配置
   useEffect(() => {

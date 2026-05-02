@@ -21,24 +21,29 @@ const AIModule: React.FC<AIModuleProps> = ({ type, title, description }) => {
     setError(null);
 
     try {
-      let response;
       if (type === 'generation') {
-        response = await aiService.generateQuestions({
+        const response = await aiService.generateQuestions({
           topic: input,
           count: 5,
         });
+        const questions = (response as any)?.questions || [];
         setResult(
-          `已根据您的要求生成 ${response.questions?.length || 5} 道关于"${input}"的练习题。\n\n${response.questions?.map((q: any, i: number) => `${i + 1}. ${q.content || q}`).join('\n') || ''}`
+          `已根据您的要求生成 ${questions.length || 5} 道关于"${input}"的练习题。\n\n${questions.map((q: any, i: number) => `${i + 1}. ${q.content || q}`).join('\n') || ''}`
         );
       } else if (type === 'correction') {
-        response = await aiService.correctHomework({ content: input });
+        const response = await aiService.correctHomework({ content: input });
+        const resData = response as any;
+        const score = resData?.score ?? '待评分';
+        const feedback = resData?.feedback || '暂无详细反馈';
         setResult(
-          `批改完成：${response.score || '85'}分。\n\n${response.feedback || '错误点：在计算摩擦力时未考虑斜面倾角。'}`
+          `批改完成：${score}分。\n\n${feedback}`
         );
       } else {
-        response = await aiService.analyzeClass({ classId: input });
+        const response = await aiService.analyzeClass({ classId: input });
+        const resData = response as any;
+        const analysis = resData?.analysis || '暂无分析结果';
         setResult(
-          `分析完成：${response.analysis || `该班级对"${input}"章节掌握程度较高，但在"相位差"理解上存在普遍薄弱。`}`
+          `分析完成：${analysis}`
         );
       }
     } catch (err: any) {

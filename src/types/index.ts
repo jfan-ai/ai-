@@ -96,11 +96,16 @@ export interface AIFeedback {
 // 错题本类型
 export interface ErrorQuestion {
   id: string;
-  studentId: string;
-  questionId: string;
+  studentId?: string;
+  questionId?: string;
   question?: Question;
-  errorType?: string;
-  errorCount: number;
+  title: string;  // 题目标题
+  chapter?: string;  // 所属章节
+  difficulty?: Difficulty;  // 难度
+  errorType?: string;  // 错误类型
+  errorCount: number;  // 错误次数
+  tags?: string[];  // 标签
+  lastReview?: string;  // 上次复盘时间
   lastReviewedAt?: string;
   createdAt?: string;
 }
